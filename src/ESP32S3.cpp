@@ -8,8 +8,11 @@
 #include <driver/twai.h>
 #include <esp_intr_alloc.h>
 #include <soc/soc.h>
-#include <FreeRTOS.h>
-#include <task.h>
+
+#ifndef INC_FREERTOS_H
+	#include <FreeRTOS.h>
+	#include <task.h>
+#endif
 
 ESP32S3Class::ESP32S3Class() :
   CANControllerClass()
@@ -21,40 +24,51 @@ ESP32S3Class::ESP32S3Class() :
 
 ESP32S3Class::~ESP32S3Class() {}
 
-int ESP32S3Class::begin(long baudRate)
+int ESP32S3Class::begin(long baudRate, twai_general_config_t *g_config_in, twai_timing_config_t *t_config_in, twai_filter_config_t *f_config_in)
 {
   CANControllerClass::begin(baudRate);
 
   _loopback = false;
 
-	twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(_txPin, _rxPin, TWAI_MODE_NORMAL);
-	twai_timing_config_t t_config;
+	twai_general_config_t g_config_default = TWAI_GENERAL_CONFIG_DEFAULT(_txPin, _rxPin, TWAI_MODE_NORMAL);
+	twai_general_config_t *g_config = g_config_in;
+	if (g_config == 0)
+		g_config = &g_config_default;
+
+	twai_timing_config_t t_config_default;
 	switch (baudRate) {
 		case (long)1000E3:
-			t_config = TWAI_TIMING_CONFIG_1MBITS();
+			t_config_default = TWAI_TIMING_CONFIG_1MBITS();
 			break;
 		case (long)500E3:
-			t_config = TWAI_TIMING_CONFIG_500KBITS();
+			t_config_default = TWAI_TIMING_CONFIG_500KBITS();
 			break;
 		case (long)250E3:
-			t_config = TWAI_TIMING_CONFIG_250KBITS();
+			t_config_default = TWAI_TIMING_CONFIG_250KBITS();
 			break;
 		case (long)125E3:
-			t_config = TWAI_TIMING_CONFIG_125KBITS();
+			t_config_default = TWAI_TIMING_CONFIG_125KBITS();
 			break;
 		case (long)100E3:
-			t_config = TWAI_TIMING_CONFIG_100KBITS();
+			t_config_default = TWAI_TIMING_CONFIG_100KBITS();
 			break;
 		case (long)50E3:
-			t_config = TWAI_TIMING_CONFIG_50KBITS();
+			t_config_default = TWAI_TIMING_CONFIG_50KBITS();
 			break;
 		default:
 			return 0;
 	}
-	twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
+	twai_timing_config_t *t_config = t_config_in;
+	if (t_config == 0)
+		t_config = &t_config_default;
+
+	twai_filter_config_t f_config_default = TWAI_FILTER_CONFIG_ACCEPT_ALL();
+	twai_filter_config_t *f_config = f_config_in;
+	if (f_config == 0)
+		f_config = &f_config_default;
 
 	//Install TWAI driver
-	if (twai_driver_install(&g_config, &t_config, &f_config) != ESP_OK) {
+	if (twai_driver_install(g_config, t_config, f_config) != ESP_OK) {
 		return 0;
 	}
 
