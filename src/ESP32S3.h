@@ -18,7 +18,7 @@ public:
   ESP32S3Class();
   virtual ~ESP32S3Class();
 
-  virtual int begin(long baudRate);
+  virtual int begin(long baudRate, twai_general_config_t *g_config_in = 0, twai_timing_config_t *t_config_in = 0, twai_filter_config_t *f_config_in = 0);
   virtual void end();
 
   virtual int endPacket();
